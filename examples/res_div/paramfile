@@ -1,0 +1,3 @@
+skew
+process '/home/nataraj/projects/designmyic/cad/pdk/share/pdk/sky130B/libs.tech/ngspice/sky130.lib.spice' ss ff
+end_skew

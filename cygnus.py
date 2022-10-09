@@ -4,11 +4,7 @@ from __future__ import division
 import numpy as np
 import os
 
-BSIZE_SP = 512 # Max size of a line of data; we don't want to read the
-               # whole file to find a line, in case file does not have
-               # expected structure.
-MDATA_LIST = [b'title', b'date', b'plotname', b'flags', b'no. variables',
-              b'no. points', b'dimensions', b'command', b'option']
+
 
 def rawread(fname: str):
     """Read ngspice binary raw files. Return tuple of the data, and the
@@ -30,6 +26,13 @@ def rawread(fname: str):
     #         1       v(out)  voltage
     #         2       v(in)   voltage
     # Binary:
+        
+    BSIZE_SP = 512 # Max size of a line of data; we don't want to read the
+                   # whole file to find a line, in case file does not have
+                   # expected structure.
+    MDATA_LIST = [b'title', b'date', b'plotname', b'flags', b'no. variables',
+                  b'no. points', b'dimensions', b'command', b'option']
+    
     fp = open(fname, 'rb')
     plot = {}
     count = 0
@@ -67,24 +70,32 @@ def rawread(fname: str):
             break
     return (arrs, plots)
 
+
 def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
+    
+    # =============================================================================
+    # _FindNoiseContributors_ Usage:
+    # ------------------------------
+    # _FindNoiseContributors_ (<str:rawfile_name>, <integer:num_of_contributors>,\
+    #   [<str:rawfile path>])
+    # rawfilepath is optional. If not specified, the script will search for file in
+    # /$HOME/.xschem/simulations/
+    # 
+    # To create a raw binary file from noise simulation, add the following commands
+    # in the .control block in ngspice netlist before running the simulation
+    #
+    # noise v(vout) V6 dec 10 1kHz 100MEG 1 *<== must add 1 after 100MEG
+    # setplot noise2
+    # write ldo_2_noise2.raw
+    #
+    # 
+    # =============================================================================
+    
     if rawfile_path==0:
         rawfile_path=os.getenv('HOME')+'/.xschem/simulations/'
     file=rawfile_path+rawfile
     arrs, plots = rawread(file)
-    arrs=np.array(arrs)
-    #print("VD=",arrs0['v(d)'])
-    #print("VG=",arrs0['v(g)'])
-    #print("ID=",arrs0['i(vds)']*-1)
-    #plt.scatter(arrs0['v(g)'][0],arrs0['i(vds)'][0]*-1, color='black')
-    
-    #plt.scatter(l0.get_data('v(g)'),l0.get_data('i(vds)')*-1, color='black')
-    #plt.scatter(l1.get_data('v(g)'),l1.get_data('i(vds)')*-1, color='red')
-    #plt.show()
-    #plt.scatter(l2.get_data('v(g)'),l2.get_data('i(vds)')*-1, color='green')
-    #plt.scatter(arrs1['v(g)'][0],arrs1['i(vds)'][0]*-1, color='blue')
-    #plt.show()
-    
+    arrs=np.array(arrs)    
     noise_dict={}
     noise_keys=[]
     noise_values=[]
@@ -121,11 +132,42 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     print('--------------------------------------------------------------------------------')
     for i in range(num):
         print(i, ": ",noise_sorted[i])
-                   
+def _CreateCornerSimFiles_(tb, spicelib, sim_dir,process_corners,sim_cmds,sweep_params=0):
+    print(tb)
+    print(spicelib)
+    print(process_corners)
+    corners=len(process_corners)
+    cornerfiles=[]
+    i=0
+    for proc in process_corners:
+        cornerfiles.append(sim_dir+'/corner_'+proc+'.sp')
+        file=sim_dir+'/corner_'+proc+'.sp'
+        with open(file, 'w') as f:
+            line='.include '+tb
+            f.write(line)
+            line='\n.lib /home/nataraj/projects/designmyic/cad/pdk/share/pdk/sky130B/libs.tech/ngspice/sky130.lib.spice '+proc
+            f.write(line)
+            
+            i=0
+            for cmd in sim_cmds:
+                line='\n.control\n'+cmd+'\n\nwrite '+proc+str(i)+'.raw\n.endc'
+                f.write(line)
+                i+=1
+        f.close()
     
-    #for i in range(len(noise_contributors)):
-    #    print(noise_contributors[i])
-    
-    #print(len(arrs.dtype))
-    #for i in range(len(arrs.dtype)):
-    #    print(arrs.dtype[i].names)
+spicelib='/home/nataraj/projects/designmyic/cad/pdk/share/pdk/sky130B/libs.tech/ngspice/sky130.lib.spice'
+cornerfile_path='/home/nataraj/projects/designmyic/cad/cygnus/examples/res_div'
+_CreateCornerSimFiles_(tb='tb_res_div.spice',\
+                       spicelib=spicelib,\
+                       sim_dir='/home/nataraj/projects/designmyic/cad/cygnus/examples/res_div',\
+                       process_corners=['tt', 'ff', 'ss'],\
+                       sim_cmds=['dc temp 0 100 1 VIN 0 3 0.5'])
+
+
+def _RunCornerSim_(cornerfile):
+    cornerfile_path='/home/nataraj/projects/designmyic/cad/cygnus/examples/res_div'
+    cmd='ngspice -b '+ cornerfile_path+'/'+cornerfile
+    print(cmd)
+    os.system(cmd)
+
+#_RunCornerSim_('corner.sp')
