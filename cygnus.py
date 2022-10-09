@@ -129,5 +129,3 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     #print(len(arrs.dtype))
     #for i in range(len(arrs.dtype)):
     #    print(arrs.dtype[i].names)
-
-_FindNoiseContributors_(rawfile='ldo_2_noise.raw', num_of_contributors=30)

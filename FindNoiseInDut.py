@@ -19,12 +19,12 @@ from cygnus import _FindNoiseContributors_
 # /$HOME/.xschem/simulations/
 # 
 # To create a raw binary file from noise simulation, add the following commands
-# in the .control block in ngspice
+# in the .control block in ngspice netlist before running the simulation
 #
 # noise v(vout) V6 dec 10 1kHz 100MEG 1 *<== must add 1 after 100MEG
 # setplot noise2
-# write ldo_2_noise.raw
+# write ldo_2_noise2.raw
 #
 # 
 # =============================================================================
-_FindNoiseContributors_(rawfile='ldo_2_noise.raw', num_of_contributors=30)
+_FindNoiseContributors_(rawfile='ldo_2_noise2.raw', num_of_contributors=30)
