@@ -74,7 +74,7 @@ def rawread(fname: str):
 
 def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     
-    # =============================================================================
+    # =========================================================================
     # _FindNoiseContributors_ Usage:
     # ------------------------------
     # _FindNoiseContributors_ (<str:rawfile_name>, <integer:num_of_contributors>,\
@@ -90,7 +90,7 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     # write ldo_2_noise2.raw
     #
     # 
-    # =============================================================================
+    # =========================================================================
     
     if rawfile_path==0:
         rawfile_path=os.getenv('HOME')+'/.xschem/simulations/'
@@ -133,6 +133,8 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     print('--------------------------------------------------------------------------------')
     for i in range(num):
         print(i, ": ",noise_sorted[i])
+# =============================================================================
+# =============================================================================
         
 def _CreateCornerSimFiles_(sim_dir, tb, model_file, corners,run=0):
     #print(tb)
@@ -224,22 +226,8 @@ def _CreateCornerSimFiles_(sim_dir, tb, model_file, corners,run=0):
             print(cmd)
             os.system(cmd)
             print("Please check corner sim resilts in corner_<#> folders")
-            
-"""
-_CreateCornerSimFiles_(sim_dir='/home/nataraj/projects/designmyic/cad/cygnus/examples/rc',\
-                       tb='tb_rc.spice',\
-                       model_file='/home/nataraj/projects/designmyic/cad/pdk/share/pdk/sky130B/libs.tech/ngspice/sky130.lib.spice',\
-                       corners={'lib':['ff','ss'],'RLOAD':[1e2, 1e4]}, run=0)
-"""
-            
-def _RunCornerSim_(cornerfile):
-    cmd='source '+cornerfile
-    print(cmd)
-    os.system(cmd)
-
-#_RunCornerSim_('corner.sp')
-
-
+# =============================================================================
+# =============================================================================
 def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, 'to':1}):
     
     print("This script will check if "+check_expr+" in "+check_outputs['sim_name']+\
@@ -278,8 +266,7 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
         if (corner_results[i][check_expr]<min_val):
             min_val=corner_results[i][check_expr][0]
             min_corner=i
-        i+=1
-        
+        i+=1     
         
     print("Max. "+ check_expr +" = "+ str(round(max_val,3))+" in corner_"+str(max_corner))
     print("Min. "+ check_expr +" = "+ str(round(min_val,3))+" in corner_"+str(min_corner))
@@ -289,17 +276,5 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
     plt.ylabel(check_expr)
     plt.title(check_expr+" Vs Corners Plot")
     plt.show()
-        
-    
-    #print(corner_results)
-    
-        #print(name)
-        #noise_dict[name]=[round(arrs[name][0][0]*1e6,2),round(100*arrs[name][0][0]/arrs['v(inoise_total)'][0][0],2)]
-
-vectors={'a':'v(out)', 'b':'v(in)'}
-
-_ReportSpiceOutputs_(sim_dir='/home/nataraj/projects/designmyic/cad/cygnus/examples/rc', \
-                      check_outputs={'sim_name':'op', 'vectors':vectors, 'range':[1,2]},\
-                      check_expr="v(out)-v(in)",\
-                      corner_id={'from':0, 'to':3})
-#https://www.pythonforthelab.com/blog/how-create-setup-file-your-project/
+# =============================================================================
+# =============================================================================   
