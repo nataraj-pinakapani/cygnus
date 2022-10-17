@@ -10,7 +10,6 @@ from cygnus import _CreateCornerSimFiles_
 
 
 # =============================================================================
-# Comment1:
 # _CreateCornerSimFiles_ Usage:
 # ------------------------------
 # Specify the following variables

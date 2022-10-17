@@ -6,6 +6,7 @@ import os
 import itertools
 import matplotlib.pyplot as plt
 import subprocess
+import cexprtk
 
 def rawread(fname: str):
     """Read ngspice binary raw files. Return tuple of the data, and the
@@ -99,8 +100,6 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
     arrs=np.array(arrs)    
     noise_dict={}
     noise_keys=[]
-    noise_values=[]
-    noise_devices=[]
     i=0
     
     for name in arrs.dtype.names:
@@ -170,13 +169,14 @@ def _CreateCornerSimFiles_(sim_dir, tb, model_file, corners,run=0):
         
         file=sim_dir+'/corner_legend.txt'
         lines=[]
+        
         for corner in corners_json.keys():
-            lines.append(str(corner)+ " corners_"+str(corner)+' '+str(corners_json[corner])+'\n')
+            lines.append(str(corner)+' '+str(corners_json[corner])+'\n')
         with open(file, 'w') as f:
             for line in lines:
                 f.write(line)
             f.close()
-            
+           
         corner_dirs=[]
         for i in range(len(corners_json)):
             
@@ -238,6 +238,9 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
     corner_dirs=[]
     corner_results={'sim_name':check_outputs['sim_name']}
     i=corner_id['from']
+    for vector_key, vector in check_outputs['vectors'].items():
+        print(vector_key,'=',vector)
+    print(end='\n\n')
     while i<=corner_id['to']:
         corner_result={}
         corner_ids.append(i)
@@ -245,11 +248,15 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
         rawfile=sim_dir+'/corner_'+str(i)+'/'+check_outputs['sim_name']+'.raw'
         arrs, plots = rawread(rawfile)
         arrs=np.array(arrs)
-        for vector in check_outputs['vectors'].values():
+        eval_expr_input={}
+        for vector_key, vector in check_outputs['vectors'].items():
             corner_result[vector]=arrs[vector][0]
-        corner_result[check_expr]=corner_result['v(in)']-corner_result['v(out)']
+            eval_expr_input[vector_key]=corner_result[vector][0]
+            
+        corner_result[check_expr]=cexprtk.evaluate_expression(check_expr, eval_expr_input)
+        
         if not (check_outputs['range'][0]<=corner_result[check_expr]<=check_outputs['range'][1]):
-            print("Error in Corner_"+str(i)+"-->"+check_expr+" = "+str(round(corner_result[check_expr][0],3)))
+            print("Error in Corner_"+str(i)+"-->"+check_expr+" = "+str(round(corner_result[check_expr],3)))
         corner_results[i]=corner_result
         
         i+=1
@@ -257,14 +264,14 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
     i=corner_id['from']
     final_result=[]
     min_val=1e100
-    max_val=0
+    max_val=-1e100
     while i<=corner_id['to']:
         final_result.append(corner_results[i][check_expr])
         if (corner_results[i][check_expr]>max_val):
-            max_val=corner_results[i][check_expr][0]
+            max_val=corner_results[i][check_expr]
             max_corner=i
         if (corner_results[i][check_expr]<min_val):
-            min_val=corner_results[i][check_expr][0]
+            min_val=corner_results[i][check_expr]
             min_corner=i
         i+=1     
         
@@ -274,7 +281,9 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
     plt.plot(corner_ids, final_result)
     plt.xlabel('corner_id')
     plt.ylabel(check_expr)
-    plt.title(check_expr+" Vs Corners Plot")
+    plt.title('Corners Vs '+check_expr+ ' Plot')
     plt.show()
+    return
+    
 # =============================================================================
 # =============================================================================   
