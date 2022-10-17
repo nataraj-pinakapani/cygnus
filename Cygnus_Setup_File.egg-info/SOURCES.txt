@@ -1,7 +1,0 @@
-README.md
-cygnus.py
-setup.py
-Cygnus_Setup_File.egg-info/PKG-INFO
-Cygnus_Setup_File.egg-info/SOURCES.txt
-Cygnus_Setup_File.egg-info/dependency_links.txt
-Cygnus_Setup_File.egg-info/top_level.txt
