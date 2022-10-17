@@ -1,0 +1,4 @@
+0 corners_0 {'lib': 'ff', 'RLOAD': 100.0}
+1 corners_1 {'lib': 'ff', 'RLOAD': 10000.0}
+2 corners_2 {'lib': 'ss', 'RLOAD': 100.0}
+3 corners_3 {'lib': 'ss', 'RLOAD': 10000.0}
