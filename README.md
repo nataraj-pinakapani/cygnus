@@ -3,9 +3,7 @@
 Installation Instructions:
 --------------------------
 
-git clone https://github.com/nataraj-pinakapani/cygnus.git 
-cd cygnus
-./install.sh
+git clone https://github.com/nataraj-pinakapani/cygnus.git ;cd cygnus ;./install.sh
 
 
 Usage Instructions:
