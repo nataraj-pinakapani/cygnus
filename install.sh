@@ -2,4 +2,4 @@
 pip install -r requirements.txt
 pip uninstall Cygnus
 pip uninstall cygnus
-python setup.py install
+python3 setup.py install
