@@ -1,6 +1,3 @@
 numpy
-os
-itertools
 matplotlib
-subprocess
 cexprtk

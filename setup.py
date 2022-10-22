@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(
-    name='Cygnus',
+    name='cygnus',
     version='1.1',
     scripts=['cygnus.py'],
 )
