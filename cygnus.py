@@ -135,105 +135,9 @@ def _FindNoiseContributors_(rawfile,num_of_contributors,rawfile_path=0):
 # =============================================================================
 # =============================================================================
         
-def _CreateCornerSimFiles_(sim_dir, tb, model_file, corners,run=0):
-    #print(tb)
-    #print(spicelib)
+def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id, show_plots):
     
-    corners_json={}
-    if(corners=={}):
-        print("Sim Corners Not given")
-        return
-    else:
-        keys=[]
-        values=[]
-        for key, value in corners.items():
-            keys.append(key)
-            values.append(value)  
-               
-        # using itertools.product()  
-        # to compute all possible permutations
-        sim_corners = list(itertools.product(*values))
-          
-        # printing result
-        i=0
-        
-        for corner in sim_corners:
-            temp_json= dict(zip(keys,corner))
-            corners_json[i]=temp_json
-            i+=1
-        
-        #print(corners_json)
-        
-        cmd="rm -rf "+sim_dir+'/corner*'
-        os.system(cmd)
-        
-        file=sim_dir+'/corner_legend.txt'
-        lines=[]
-        
-        for corner in corners_json.keys():
-            lines.append(str(corner)+' '+str(corners_json[corner])+'\n')
-        with open(file, 'w') as f:
-            for line in lines:
-                f.write(line)
-            f.close()
-           
-        corner_dirs=[]
-        for i in range(len(corners_json)):
-            
-            #print(corners_json[i+1])
-            corner_dir=sim_dir+'/corner_'+str(i)
-            cmd='mkdir '+corner_dir
-            os.system(cmd)
-            corner_dirs.append(corner_dir)
-            lines=[]
-            lines.append("* Netlist: "+ tb)
-            lines.append("* Corner: "+ str(corners_json[i]))
-
-            lines.append('\n.control')
-            for key in corners_json[i].keys():  
-                if not key =='lib':
-                    lines.append('\nalter '+key+' '+str(corners_json[i][key]))
-            lines.append('\n.endc')    
-            
-            lines.append('\n.lib '+model_file+' '+ corners_json[i]['lib'])
-            lines.append('\n.include '+sim_dir+'/'+tb)     
-            
-            
-            file=corner_dir+'/corner_'+str(i)+'.sp'
-            with open(file, 'w') as f:
-                for line in lines:
-                    f.write(line)
-                f.close()
-            file=sim_dir+'/corners_sim.sh'
-            lines=[]
-            with open(file, 'w') as f:
-                line='#!/bin/bash\n'
-                f.write(line)
-                for i in range(len(corner_dirs)):
-                    line="cd "+corner_dirs[i]+'\nngspice -b '+ corner_dirs[i]+'/corner_'+str(i)+'.sp\n'
-                    f.write(line)
-                line='cd '+sim_dir
-                f.write(line)
-                f.close()
-        #print(len(corners_json))
-        if(run==0):
-            print("Run source ",file, "to run the corner sims")
-            return
-        elif(run==1):
-
-            os.system('/bin/bash -c source HOME/.bashrc')
-            cmd=subprocess.call(["/bin/sh", file])
-            print(cmd)
-            os.system(cmd)
-            print("Please check corner sim resilts in corner_<#> folders")
-# =============================================================================
-# =============================================================================
-def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, 'to':1}):
     
-    print("This script will check if "+check_expr+" in "+check_outputs['sim_name']+\
-          " simulation is within "+ str(check_outputs['range'][0])+" and "+str(check_outputs['range'][1]))
-    print('---------------------------------------------------------------------------------------------',end='\n\n')
-    print('Please find simulation/testbench settings for the corners in '+sim_dir+'/corners_legend.txt',end='\n\n')
     corner_ids=[]
     corner_dirs=[]
     corner_results={'sim_name':check_outputs['sim_name']}
@@ -241,49 +145,83 @@ def _ReportSpiceOutputs_(sim_dir,check_outputs,check_expr,corner_id={'from':0, '
     for vector_key, vector in check_outputs['vectors'].items():
         print(vector_key,'=',vector)
     print(end='\n\n')
-    while i<=corner_id['to']:
-        corner_result={}
-        corner_ids.append(i)
-        corner_dirs.append('corner_'+str(i))
-        rawfile=sim_dir+'/corner_'+str(i)+'/'+check_outputs['sim_name']+'.raw'
-        arrs, plots = rawread(rawfile)
-        arrs=np.array(arrs)
-        eval_expr_input={}
-        for vector_key, vector in check_outputs['vectors'].items():
-            corner_result[vector]=arrs[vector][0]
-            eval_expr_input[vector_key]=corner_result[vector][0]
-            
-        corner_result[check_expr]=cexprtk.evaluate_expression(check_expr, eval_expr_input)
-        
-        if not (check_outputs['range'][0]<=corner_result[check_expr]<=check_outputs['range'][1]):
-            print("Error in Corner_"+str(i)+"-->"+check_expr+" = "+str(round(corner_result[check_expr],3)))
-        corner_results[i]=corner_result
-        
-        i+=1
-        
-    i=corner_id['from']
-    final_result=[]
-    min_val=1e100
-    max_val=-1e100
-    while i<=corner_id['to']:
-        final_result.append(corner_results[i][check_expr])
-        if (corner_results[i][check_expr]>max_val):
-            max_val=corner_results[i][check_expr]
-            max_corner=i
-        if (corner_results[i][check_expr]<min_val):
-            min_val=corner_results[i][check_expr]
-            min_corner=i
-        i+=1     
-        
-    print("Max. "+ check_expr +" = "+ str(round(max_val,3))+" in corner_"+str(max_corner))
-    print("Min. "+ check_expr +" = "+ str(round(min_val,3))+" in corner_"+str(min_corner))
-    plt.scatter(corner_ids, final_result)
-    plt.plot(corner_ids, final_result)
-    plt.xlabel('corner_id')
-    plt.ylabel(check_expr)
-    plt.title('Corners Vs '+check_expr+ ' Plot')
-    plt.show()
-    return
     
+    if(check_outputs['sim_type']=='op'):
+        print("This script will check if "+check_expr+" in "+check_outputs['sim_name']+\
+              " simulation is within "+ str(check_outputs['range'][0])+" and "+str(check_outputs['range'][1]))
+        print('---------------------------------------------------------------------------------------------',end='\n\n')
+        print('Please find simulation/testbench settings for the corners in '+sim_dir+'/corners_legend.txt',end='\n\n')
+        while i<=corner_id['to']:
+            corner_result={}
+            corner_ids.append(i)
+            corner_dirs.append('corner_'+str(i))
+            rawfile=sim_dir+'/corner_'+str(i)+'/'+check_outputs['sim_name']+'.raw'
+            arrs, plots = rawread(rawfile)
+            arrs=np.array(arrs)
+            eval_expr_input={}
+            for vector_key, vector in check_outputs['vectors'].items():
+                corner_result[vector]=arrs[vector][0]
+                eval_expr_input[vector_key]=corner_result[vector][0]
+                
+            corner_result[check_expr]=cexprtk.evaluate_expression(check_expr, eval_expr_input)
+            
+            if not (check_outputs['range'][0]<=corner_result[check_expr]<=check_outputs['range'][1]):
+                print("Error in Corner_"+str(i)+"-->"+check_expr+" = "+str(round(corner_result[check_expr],3)))
+            corner_results[i]=corner_result
+            
+            i+=1
+            
+        i=corner_id['from']
+        final_result=[]
+        min_val=1e100
+        max_val=-1e100
+        while i<=corner_id['to']:
+            final_result.append(corner_results[i][check_expr])
+            if (corner_results[i][check_expr]>max_val):
+                max_val=corner_results[i][check_expr]
+                max_corner=i
+            if (corner_results[i][check_expr]<min_val):
+                min_val=corner_results[i][check_expr]
+                min_corner=i
+            i+=1     
+            
+        print("Max. "+ check_expr +" = "+ str(round(max_val,3))+" in corner_"+str(max_corner))
+        print("Min. "+ check_expr +" = "+ str(round(min_val,3))+" in corner_"+str(min_corner))
+        plt.scatter(corner_ids, final_result)
+        plt.plot(corner_ids, final_result)
+        plt.xlabel('corner_id')
+        plt.ylabel(check_expr)
+        plt.title('Corners Vs '+check_expr+ ' Plot')
+        plt.show()
+    
+    
+    elif(check_outputs['sim_type']=='dc'):
+        i=corner_id['from']
+        corner_result={}
+        while i<=corner_id['to']:
+            corner_result[i]={}
+            corner_ids.append(i)
+            corner_dirs.append('corner_'+str(i))
+            rawfile=sim_dir+'/corner_'+str(i)+'/'+check_outputs['sim_name']+'.raw'
+            arrs, plots = rawread(rawfile)
+            arrs=np.array(arrs)
+            for vector_key, vector in check_outputs['vectors'].items():
+                corner_result[i][vector]=arrs[vector]      
+                
+            i+=1
+    
+    
+        i=corner_id['from']
+        while i<=corner_id['to']:
+            for plot in show_plots:
+                x=corner_result[i][plot[0]]
+                y=corner_result[i][plot[1]]
+                plt.scatter(x,y)
+                plt.plot(x,y)
+                plt.show()
+            
+            i+=1
+
+    return    
 # =============================================================================
 # =============================================================================   
